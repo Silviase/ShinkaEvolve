@@ -1,0 +1,50 @@
+# Star + chain mix: risky shortcut vs safe detour to deep demands.
+description: "Depot to hub to deep chain; optional risky shortcut edge to node6. Tests risk vs detour choice."
+level: 4
+horizon: 15
+num_nodes: 8
+edges:
+  - [0, 1]
+  - [1, 2]
+  - [2, 3]
+  - [3, 4]
+  - [4, 5]
+  - [1, 6]   # risky shortcut to deep demand
+  - [5, 6]
+  - [2, 7]
+supply_nodes: [0]
+demand_nodes: [4, 6, 7]
+
+demand_sinusoidal:
+  - {node: 4, base: 7.0, amplitude: 1.6, phase: 0.0}
+  - {node: 6, base: 8.0, amplitude: 2.0, phase: 0.6}
+  - {node: 7, base: 5.5, amplitude: 1.4, phase: 1.0}
+
+edge_capacity: [16.0, 12.0, 11.0, 10.0, 9.0, 8.0, 8.0, 7.0]
+edge_cost: [1.0, 1.0, 1.0, 1.1, 1.1, 0.8, 1.2, 1.0]
+
+availability:
+  open_probability: 0.72
+  # Shortcut edge (idx 5) is much less reliable than main chain.
+  per_edge: [0.78, 0.78, 0.75, 0.75, 0.74, 0.6, 0.72, 0.76]
+risk:
+  range: [0.12, 0.38]
+  per_edge_range:
+    - [0.12, 0.32]
+    - [0.12, 0.32]
+    - [0.12, 0.34]
+    - [0.12, 0.34]
+    - [0.14, 0.36]
+    - [0.20, 0.50]   # risky shortcut
+    - [0.14, 0.36]
+    - [0.12, 0.32]
+loss_penalty: 1.6
+
+initial_inventory: [165.0, 20.0, 18.0, 12.0, 0.0, 0.0, 0.0, 0.0]
+
+supply_injection:
+  per_period:
+    - {node: 0, amount: 8.5}
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.08, risk_weight: 0.65}
+cvar: {lambda: 0.0, tau: 0.2}

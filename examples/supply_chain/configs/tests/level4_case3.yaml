@@ -1,0 +1,39 @@
+# Contested with staggered closures; mid-node 4 is both demand and forwarder to deep node 6.
+description: "Two hubs, node4 consumes/forwards, open_probability 0.75; risk moderate-high."
+level: 4
+horizon: 12
+num_nodes: 7
+edges:
+  - [0, 1]
+  - [0, 2]
+  - [1, 4]
+  - [2, 4]
+  - [4, 3]
+  - [4, 5]
+  - [5, 6]
+  - [2, 1]
+supply_nodes: [0]
+demand_nodes: [3, 4, 6]
+
+demand_sinusoidal:
+  - {node: 3, base: 6.5, amplitude: 1.6, phase: 0.4}
+  - {node: 4, base: 5.5, amplitude: 1.4, phase: 0.9}
+  - {node: 6, base: 6.0, amplitude: 1.5, phase: 1.2}
+
+edge_capacity: [15.0, 15.0, 10.0, 10.0, 9.0, 9.0, 7.0, 7.0]
+edge_cost: [1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.0, 0.9]
+
+availability:
+  open_probability: 0.75
+risk:
+  range: [0.1, 0.35]
+loss_penalty: 1.5
+
+initial_inventory: [150.0, 18.0, 18.0, 0.0, 0.0, 0.0, 0.0]
+
+supply_injection:
+  per_period:
+    - {node: 0, amount: 8.0}
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.08, risk_weight: 0.6}
+cvar: {lambda: 0.0, tau: 0.2}

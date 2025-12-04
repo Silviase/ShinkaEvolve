@@ -1,0 +1,36 @@
+# Two-hop tree with one hub feeding two demand leaves; mild oscillation and steady supply injection.
+level: 2
+horizon: 8
+num_nodes: 6
+edges:
+  - [0, 1]   # depot -> hub A
+  - [0, 2]   # depot -> hub B
+  - [1, 3]   # hub A -> mid
+  - [2, 3]   # hub B -> mid
+  - [3, 4]   # mid -> demand X
+  - [3, 5]   # mid -> demand Y
+supply_nodes: [0]
+demand_nodes: [4, 5]
+
+demand_waves:
+  - {node: 4, base: 8.0, amplitude: 2.0, freq: 0.5, func: sin}
+  - {node: 5, base: 7.0, amplitude: 1.5, freq: 0.6, func: cos}
+
+edge_capacity: [12.0, 12.0, 10.0, 10.0, 9.0, 9.0]
+edge_cost: [1.0, 1.0, 1.1, 1.1, 0.9, 0.9]
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.0
+
+initial_inventory: [70.0, 10.0, 10.0, 5.0, 0.0, 0.0]
+
+supply_injection:
+  per_period:
+    - {node: 0, amount: 6.0}
+
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.06
+  risk_weight: 0.0
+
+cvar: {lambda: 0.0, tau: 0.2}

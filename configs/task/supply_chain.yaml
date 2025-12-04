@@ -1,0 +1,49 @@
+evaluate_function:
+  _target_: examples.supply_chain.evaluate.main
+  program_path: examples/supply_chain/initial.py
+  results_dir: results/supply_chain
+  base_seed: 13
+  config_dir: configs/tests
+
+distributed_job_config:
+  _target_: shinka.launch.SlurmCondaJobConfig
+  modules:
+    - "cuda/12.4"
+    - "cudnn/8.9.7"
+    - "hpcx/2.20"
+  eval_program_path: "shinka/eval_hydra.py"
+  conda_env: "shinka"
+  time: "00:20:00"
+  cpus: 2
+  gpus: 0
+  mem: "8G"
+
+evo_config:
+  task_sys_msg: |
+    You are evolving a Python policy for a multi-stage supply chain on a directed graph with capacities, costs, and risk.
+    Implement `logistics_policy(state: LogisticsState) -> Shipments` inside the EVOLVE-BLOCK.
+
+    System constraints (must obey):
+    - Shipments are non-negative and cannot exceed edge_capacity or source inventory; skip closed edges (edge_available=False).
+    - State fields: t, T, edges, inventory, demand, is_supply_node, is_demand_node, edge_capacity, edge_cost, edge_available, edge_risk, cost_weight, risk_weight, supply_reward_weight.
+
+    Principles for a robust policy:
+    1) Horizon-aware: use remaining steps (T - t) to trade off immediate fulfillment vs. building buffers for future demand/stock-outs.
+    2) Risk- and cost-aware routing: prefer cheaper/safer open edges; diversify flow when a single route is risky/fragile (especially level 4/5).
+    3) Demand coverage: prioritize true demand nodes, but allocate modest buffers to downstream/intermediate nodes to prevent future starvation.
+    4) Multi-hop & non-leaf demand: internal nodes may have demand; do not assume a single-echelon tree. Support flows through intermediates.
+    5) Peak/stochastic demand: when inventory and time permit, stage extra supply near volatile or high-risk cuts; avoid over-committing early.
+    6) Graceful degradation: if capacity or availability is low, spread shipments across viable edges rather than zeroing out a node.
+    7) Loss/penalty awareness: when risk_weight > 0, reduce flow on high-risk edges or split volume; when risk is 0, prioritize cost-efficient edges.
+    8) Optimization is allowed: if a small LP / min-cost-flow is easy to set up per step, you may use it when available; otherwise fall back to a simple heuristic. Keep it lightweight and resilient to missing solvers.
+
+    Provided helpers (imported in the template):
+    - generate_episode_config(level, seed) or generate_episode_config_from_file(path, seed)
+    - simulate_episode(config, policy_fn, seed=0)  # for local checks
+
+    The same signature is used for all curriculum levels and test scenarios (single-step deterministic up to contested, risk-aware cases).
+  language: "python"
+  init_program_path: "examples/supply_chain/initial.py"
+  job_type: "slurm_conda"
+
+exp_name: "shinka_supply_chain"

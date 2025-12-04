@@ -1,0 +1,28 @@
+# Hub bottleneck: high demand at hub itself and downstream leaf; capacity tight on hub->leaf edge.
+description: "Single-period, hub is also a demand node; tests allocation between hub consumption vs downstream leaf."
+level: 1
+horizon: 1
+num_nodes: 5
+edges:
+  - [0, 1]   # depot -> hub (demand)
+  - [1, 2]   # hub -> demand leaf
+  - [0, 3]   # depot -> demand leaf
+  - [0, 4]   # depot -> demand leaf
+supply_nodes: [0]
+demand_nodes: [1, 2, 3, 4]
+
+demand_uniform:
+  - {node: 1, low: 8.0, high: 10.0}
+  - {node: 2, low: 12.0, high: 14.0}
+  - {node: 3, low: 4.0, high: 6.0}
+  - {node: 4, low: 4.0, high: 6.0}
+
+initial_inventory: [28.0, 5.0, 0.0, 0.0, 0.0]
+edge_capacity: [10.0, 6.0, 7.0, 7.0]
+edge_cost: [1.0, 1.1, 1.2, 1.2]
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.0
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.08, risk_weight: 0.0}
+cvar: {lambda: 0.0, tau: 0.2}

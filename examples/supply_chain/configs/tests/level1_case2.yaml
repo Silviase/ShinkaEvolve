@@ -1,0 +1,29 @@
+# Two supply nodes converging to a hub that feeds two demands; checks multi-supply routing in single period.
+level: 1
+horizon: 1
+num_nodes: 5
+edges:
+  - [0, 2]   # supply A -> hub
+  - [1, 2]   # supply B -> hub
+  - [2, 3]   # hub -> demand
+  - [2, 4]   # hub -> demand
+supply_nodes: [0, 1]
+demand_nodes: [3, 4]
+
+demand_uniform:
+  - {node: 3, low: 12.0, high: 14.0}
+  - {node: 4, low: 6.0, high: 8.0}
+
+initial_inventory: [10.0, 12.0, 4.0, 0.0, 0.0]
+edge_capacity: [8.0, 8.0, 14.0, 10.0]
+edge_cost: [0.9, 1.0, 1.1, 1.1]
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.0
+
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.08
+  risk_weight: 0.0
+
+cvar: {lambda: 0.0, tau: 0.2}

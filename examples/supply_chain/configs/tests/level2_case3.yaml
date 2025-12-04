@@ -1,0 +1,31 @@
+# Inventory smoothing: modest injection, rising demand; tests forward planning over 6 steps.
+description: "Depot->hub->two demands; demand ramps up, injection modest, capacity tight at hub->demand."
+level: 2
+horizon: 6
+num_nodes: 5
+edges:
+  - [0, 1]
+  - [1, 2]
+  - [1, 3]
+  - [0, 4]
+supply_nodes: [0]
+demand_nodes: [2, 3, 4]
+
+demand_waves:
+  - {node: 2, base: 5.0, amplitude: 2.0, freq: 0.8, func: sin}
+  - {node: 3, base: 4.5, amplitude: 2.0, freq: 0.7, func: sin}
+  - {node: 4, base: 3.0, amplitude: 1.0, freq: 0.9, func: cos}
+
+edge_capacity: [12.0, 8.0, 8.0, 6.0]
+edge_cost: [1.0, 1.0, 1.0, 0.9]
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.0
+
+initial_inventory: [40.0, 6.0, 0.0, 0.0, 0.0]
+supply_injection:
+  per_period:
+    - {node: 0, amount: 4.0}
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.06, risk_weight: 0.0}
+cvar: {lambda: 0.0, tau: 0.2}

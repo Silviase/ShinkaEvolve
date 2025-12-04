@@ -1,0 +1,27 @@
+# Two-step split plus supply scarcity; forces prioritization among three demands.
+description: "Low inventory vs high total demand; depot->hub plus direct edge; tests prioritization."
+level: 1
+horizon: 1
+num_nodes: 5
+edges:
+  - [0, 1]   # depot -> hub
+  - [1, 2]   # hub -> demand
+  - [1, 3]   # hub -> demand
+  - [0, 4]   # depot -> demand
+supply_nodes: [0]
+demand_nodes: [2, 3, 4]
+
+demand_uniform:
+  - {node: 2, low: 10.0, high: 10.0}
+  - {node: 3, low: 8.0, high: 8.0}
+  - {node: 4, low: 9.0, high: 9.0}
+
+initial_inventory: [18.0, 4.0, 0.0, 0.0, 0.0]
+edge_capacity: [10.0, 7.0, 7.0, 8.0]
+edge_cost: [1.0, 1.1, 1.1, 0.9]
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.0
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.08, risk_weight: 0.0}
+cvar: {lambda: 0.0, tau: 0.2}

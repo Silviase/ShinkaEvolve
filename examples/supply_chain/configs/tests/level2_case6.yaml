@@ -1,0 +1,32 @@
+# Scarce inventory and low resupply; forces rationing over 8 steps.
+description: "Depot->hub->two demands plus direct leaf; very low stock/injection to test smoothing."
+level: 2
+horizon: 8
+num_nodes: 5
+edges:
+  - [0, 1]
+  - [1, 2]
+  - [1, 3]
+  - [0, 4]
+supply_nodes: [0]
+demand_nodes: [2, 3, 4]
+
+# Scarce total supply; low per-period injection to force rationing across time.
+demand_waves:
+  - {node: 2, base: 5.0, amplitude: 3.0, freq: 0.9, func: sin}
+  - {node: 3, base: 4.0, amplitude: 3.0, freq: 0.8, func: sin}
+  - {node: 4, base: 3.0, amplitude: 2.0, freq: 0.6, func: cos}
+
+edge_capacity: [10.0, 7.0, 7.0, 6.0]
+edge_cost: [1.0, 1.0, 1.0, 0.9]
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.0
+
+initial_inventory: [36.0, 4.0, 0.0, 0.0, 0.0]
+supply_injection:
+  per_period:
+    - {node: 0, amount: 2.0}
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.06, risk_weight: 0.0}
+cvar: {lambda: 0.0, tau: 0.2}

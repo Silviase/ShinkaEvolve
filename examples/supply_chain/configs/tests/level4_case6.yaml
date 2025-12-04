@@ -1,0 +1,47 @@
+# Two routes to deep demand: short risky bridge vs longer safe chain.
+description: "Depot->hub chain to demand3; alternative short bridge via node5 that is unreliable/risky."
+level: 4
+horizon: 12
+num_nodes: 6
+edges:
+  - [0, 1]   # depot -> hub A
+  - [1, 2]   # hub A -> hub B
+  - [2, 3]   # hub B -> demand (safe chain)
+  - [0, 4]   # depot -> side hub
+  - [4, 3]   # side hub -> demand (safe detour)
+  - [1, 5]   # risky shortcut start
+  - [5, 3]   # risky shortcut end
+supply_nodes: [0]
+demand_nodes: [3, 5]
+
+demand_sinusoidal:
+  - {node: 3, base: 8.0, amplitude: 2.0, phase: 0.3}
+  - {node: 5, base: 3.5, amplitude: 1.5, phase: 0.8}
+
+edge_capacity: [14.0, 12.0, 10.0, 10.0, 9.0, 8.0, 8.0]
+edge_cost: [1.0, 1.0, 1.0, 1.1, 1.1, 0.8, 0.8]
+
+availability:
+  open_probability: 0.78
+  # Bridge via node5 is unreliable (edges 5,6) compared to main chain (0-1-2-3 or 0-4-3).
+  per_edge: [0.82, 0.82, 0.8, 0.8, 0.78, 0.6, 0.6]
+risk:
+  range: [0.1, 0.36]
+  per_edge_range:
+    - [0.1, 0.28]
+    - [0.1, 0.28]
+    - [0.1, 0.30]
+    - [0.1, 0.30]
+    - [0.12, 0.32]
+    - [0.22, 0.5]   # risky shortcut
+    - [0.22, 0.5]
+loss_penalty: 1.6
+
+initial_inventory: [150.0, 16.0, 14.0, 0.0, 0.0, 0.0]
+
+supply_injection:
+  per_period:
+    - {node: 0, amount: 7.0}
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.08, risk_weight: 0.7}
+cvar: {lambda: 0.0, tau: 0.2}

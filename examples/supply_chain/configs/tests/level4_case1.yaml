@@ -1,0 +1,43 @@
+# Contested logistics with two hubs feeding three demands; occasional closures and moderate risk.
+level: 4
+horizon: 12
+num_nodes: 7
+edges:
+  - [0, 1]   # depot -> hub A
+  - [0, 2]   # depot -> hub B
+  - [1, 3]   # hub A -> demand
+  - [1, 4]   # hub A -> hub C / demand-like
+  - [2, 4]   # hub B -> hub C / demand-like
+  - [2, 5]   # hub B -> demand
+  - [4, 6]   # hub C -> deep demand
+  - [1, 2]   # cross support A->B
+  - [2, 1]   # cross support B->A
+supply_nodes: [0]
+demand_nodes: [3, 5, 6]
+
+demand_sinusoidal:
+  - {node: 3, base: 7.5, amplitude: 1.8, phase: 0.2}
+  - {node: 5, base: 7.0, amplitude: 1.5, phase: 0.8}
+  - {node: 6, base: 6.5, amplitude: 1.4, phase: 1.3}
+
+edge_capacity: [16.0, 16.0, 11.0, 11.0, 10.0, 10.0, 9.0, 7.0, 7.0]
+edge_cost: [1.0, 1.0, 0.9, 1.0, 1.0, 1.1, 1.1, 0.8, 0.8]
+
+availability:
+  open_probability: 0.78   # moderately contested
+risk:
+  range: [0.08, 0.32]
+loss_penalty: 1.4
+
+initial_inventory: [150.0, 18.0, 18.0, 0.0, 0.0, 0.0, 0.0]
+
+supply_injection:
+  per_period:
+    - {node: 0, amount: 8.0}
+
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.08
+  risk_weight: 0.5
+
+cvar: {lambda: 0.0, tau: 0.2}
