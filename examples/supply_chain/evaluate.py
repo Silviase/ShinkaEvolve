@@ -120,7 +120,7 @@ except Exception as e:  # pragma: no cover - optional deps (numpy/pandas/hydra)
         return metrics, overall_correct, first_error
 
 from examples.supply_chain.config_loader import generate_episode_config_from_file
-DEFAULT_CONFIG_DIR = FILE_DIR / "configs" / "tests"
+DEFAULT_CONFIG_DIR = FILE_DIR / "configs"
 
 
 def compute_cvar(values: Sequence[float], tau: float) -> float:
@@ -148,7 +148,7 @@ def validate_episode_result(result: Any) -> tuple[bool, str | None]:
     return True, None
 
 
-def parse_config_dir(path_str: str | None) -> List[Path]:
+def parse_config_dir(path_str: str | None) -> tuple[Path, List[Path]]:
     raw = Path(path_str) if path_str is not None else DEFAULT_CONFIG_DIR
     candidates = [raw]
     if not raw.is_absolute():
@@ -163,10 +163,10 @@ def parse_config_dir(path_str: str | None) -> List[Path]:
         raise argparse.ArgumentTypeError(
             f"Config dir not found. Tried: {', '.join(str(c) for c in candidates)}"
         )
-    paths = sorted(p for p in config_dir.glob("*.yaml") if p.is_file())
+    paths = sorted(p for p in config_dir.rglob("*.yaml") if p.is_file())
     if not paths:
         raise argparse.ArgumentTypeError(f"No YAML configs found in {config_dir}")
-    return paths
+    return config_dir, paths
 
 
 def extract_levels(config_paths: List[Path]) -> List[int]:
@@ -190,13 +190,45 @@ def make_kwargs_fn_from_configs(
     return _kwargs
 
 
-def make_aggregator(levels: List[int]) -> Callable[[List[Dict[str, Any]]], Dict[str, Any]]:
+def make_aggregator(
+    levels: List[int], config_root: Path
+) -> Callable[[List[Dict[str, Any]]], Dict[str, Any]]:
+    resolved_root = config_root.resolve()
+
+    def _folder_key(config_path: str | None) -> str:
+        if not config_path:
+            return "unknown"
+        try:
+            path = Path(config_path).resolve()
+            rel = path.relative_to(resolved_root)
+            parent = rel.parent
+            return str(parent) if str(parent) else "."
+        except Exception:
+            return Path(config_path).parent.name or "unknown"
+
+    def _folder_label(folder: str) -> str:
+        if folder in {"", "."}:
+            return "root"
+        return folder.replace("\\", "__").replace("/", "__")
+
+    def _run_score(run: Dict[str, Any]) -> float:
+        level = int(run.get("level", 0))
+        fill_rate = float(run.get("fulfillment_rate", 0.0))
+        if level == 5:
+            z_val = float(run.get("normalized_z_value", run.get("z_value", 0.0)))
+            lam = float(run.get("cvar_lambda", 0.0))
+            return fill_rate - lam * z_val
+        return float(run.get("normalized_score", run.get("score", 0.0)))
+
     def _aggregate(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         grouped: Dict[int, List[Dict[str, Any]]] = {lvl: [] for lvl in levels}
+        folder_groups: Dict[str, List[Dict[str, Any]]] = {}
         for res in results:
             lvl = res.get("level")
             if lvl in grouped:
                 grouped[lvl].append(res)
+            folder = _folder_key(res.get("config_path"))
+            folder_groups.setdefault(folder, []).append(res)
 
         public_metrics: Dict[str, Any] = {}
         private_metrics: Dict[str, Any] = {}
@@ -206,36 +238,76 @@ def make_aggregator(levels: List[int]) -> Callable[[List[Dict[str, Any]]], Dict[
             runs = grouped.get(lvl, [])
             if not runs:
                 continue
-            mean_score = (
-                sum(float(r.get("normalized_score", r.get("score", 0.0))) for r in runs)
-                / len(runs)
-            )
-            avg_fill_rate = (
-                sum(float(r.get("fulfillment_rate", 0.0)) for r in runs) / len(runs)
-            )
-            mean_cost = sum(float(r.get("cost", 0.0)) for r in runs) / len(runs)
+            per_run_scores: List[float] = []
+            fill_rates: List[float] = []
+            costs: List[float] = []
+            z_values: List[float] = []
+
+            for r in runs:
+                fill_rate = float(r.get("fulfillment_rate", 0.0))
+                fill_rates.append(fill_rate)
+                costs.append(float(r.get("cost", 0.0)))
+
+                if lvl == 5:
+                    z_val = float(r.get("normalized_z_value", r.get("z_value", 0.0)))
+                    z_values.append(z_val)
+                    lam = float(r.get("cvar_lambda", 0.0))
+                    per_run_scores.append(fill_rate - lam * z_val)
+                else:
+                    per_run_scores.append(
+                        float(r.get("normalized_score", r.get("score", 0.0)))
+                    )
+
+            mean_score = sum(per_run_scores) / len(per_run_scores)
+            min_score = min(per_run_scores)
+            max_score = max(per_run_scores)
+
+            avg_fill_rate = sum(fill_rates) / len(fill_rates)
+            min_fill_rate = min(fill_rates)
+            max_fill_rate = max(fill_rates)
+            mean_cost = sum(costs) / len(costs)
 
             public_metrics[f"level{lvl}_score"] = float(mean_score)
+            public_metrics[f"level{lvl}_min_score"] = float(min_score)
+            public_metrics[f"level{lvl}_max_score"] = float(max_score)
             public_metrics[f"level{lvl}_fill_rate"] = float(avg_fill_rate)
+            public_metrics[f"level{lvl}_min_fill_rate"] = float(min_fill_rate)
+            public_metrics[f"level{lvl}_max_fill_rate"] = float(max_fill_rate)
             private_metrics[f"level{lvl}_mean_cost"] = float(mean_cost)
+            private_metrics[f"level{lvl}_scores"] = per_run_scores
+            private_metrics[f"level{lvl}_fill_rates"] = fill_rates
+            private_metrics[f"level{lvl}_costs"] = costs
+            private_metrics[f"level{lvl}_num_runs"] = len(runs)
 
             if lvl == 5:
-                z_values = [
-                    float(r.get("normalized_z_value", r.get("z_value", 0.0)))
-                    for r in runs
-                ]
                 lam = float(runs[0].get("cvar_lambda", 0.0))
                 tau = float(runs[0].get("cvar_tau", 0.25))
                 cvar_value = compute_cvar(z_values, tau)
                 risk_adjusted = avg_fill_rate - lam * cvar_value
                 public_metrics["level5_cvar"] = float(cvar_value)
                 public_metrics["level5_risk_adjusted"] = float(risk_adjusted)
+                public_metrics["level5_min_risk_adjusted"] = float(min_score)
+                public_metrics["level5_max_risk_adjusted"] = float(max_score)
                 private_metrics["level5_z_values"] = z_values
                 level_scores.append(risk_adjusted)
             else:
                 level_scores.append(mean_score)
 
+        # Folder-level averages (using the same per-run score definition as above)
+        for folder, runs in folder_groups.items():
+            if not runs:
+                continue
+            run_scores = [_run_score(r) for r in runs]
+            fill_rates = [float(r.get("fulfillment_rate", 0.0)) for r in runs]
+            label = _folder_label(folder)
+            public_metrics[f"folder_{label}_score"] = float(sum(run_scores) / len(run_scores))
+            public_metrics[f"folder_{label}_fill_rate"] = float(sum(fill_rates) / len(fill_rates))
+            private_metrics[f"folder_{label}_scores"] = run_scores
+            private_metrics[f"folder_{label}_fill_rates"] = fill_rates
+            private_metrics[f"folder_{label}_num_runs"] = len(runs)
+
         combined_score = float(sum(level_scores) / len(level_scores)) if level_scores else 0.0
+        public_metrics["worst_level_score"] = float(min(level_scores)) if level_scores else 0.0
         public_metrics["levels_evaluated"] = levels
         metrics = {
             "combined_score": combined_score,
@@ -267,11 +339,11 @@ def main(
                 break
     program_path = str(raw_prog)
 
-    # New default: run all YAMLs under configs/tests (including base levels and test cases).
-    config_paths = parse_config_dir(config_dir)
+    # Default: run all YAMLs under the provided config dir (recursively).
+    resolved_config_dir, config_paths = parse_config_dir(config_dir)
     levels = extract_levels(config_paths)
     kwargs_fn = make_kwargs_fn_from_configs(config_paths, base_seed)
-    aggregator = make_aggregator(levels)
+    aggregator = make_aggregator(levels, resolved_config_dir)
     total_runs = len(config_paths)
 
     metrics, correct, error_msg = run_shinka_eval(
@@ -319,7 +391,7 @@ if __name__ == "__main__":
         "--config_dir",
         type=str,
         default=str(DEFAULT_CONFIG_DIR),
-        help="Directory containing YAML configs to evaluate (defaults to configs/tests).",
+        help="Directory containing YAML configs to evaluate (recursively). Defaults to examples/supply_chain/configs.",
     )
     args = parser.parse_args()
     main(

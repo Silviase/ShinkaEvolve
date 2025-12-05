@@ -1,0 +1,88 @@
+level: 2
+horizon: 6
+num_nodes: 7
+edges:
+- - 0
+  - 1
+- - 2
+  - 4
+- - 4
+  - 6
+- - 1
+  - 4
+- - 2
+  - 3
+- - 0
+  - 2
+- - 4
+  - 5
+- - 3
+  - 6
+- - 1
+  - 3
+- - 3
+  - 5
+- - 6
+  - 5
+supply_nodes:
+- 0
+demand_nodes:
+- 5
+- 6
+demand_waves:
+- node: 5
+  base: 10.9
+  amplitude: 3.45
+  freq: 0.53
+  func: cos
+- node: 6
+  base: 7.9
+  amplitude: 1.19
+  freq: 0.73
+  func: cos
+edge_capacity:
+- 15.2
+- 14.6
+- 10.9
+- 18.0
+- 12.9
+- 11.7
+- 14.8
+- 10.3
+- 11.6
+- 15.7
+- 18.6
+edge_cost:
+- 0.95
+- 0.98
+- 1.21
+- 1.27
+- 0.96
+- 1.24
+- 1.06
+- 1.03
+- 1.1
+- 0.98
+- 1.08
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.58
+initial_inventory:
+- 80.2
+- 4.3
+- 5.4
+- 9.1
+- 10.0
+- 8.6
+- 9.4
+supply_injection:
+  per_period:
+  - node: 0
+    amount: 6.55
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.081
+  risk_weight: 0.033
+cvar:
+  lambda: 0.0
+  tau: 0.2

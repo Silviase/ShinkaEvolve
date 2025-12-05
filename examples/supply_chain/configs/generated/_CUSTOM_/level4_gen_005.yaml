@@ -1,0 +1,106 @@
+level: 4
+horizon: 12
+num_nodes: 7
+edges:
+- - 0
+  - 1
+- - 0
+  - 2
+- - 1
+  - 3
+- - 2
+  - 4
+- - 3
+  - 5
+- - 4
+  - 6
+- - 3
+  - 6
+- - 2
+  - 5
+supply_nodes:
+- 0
+demand_nodes:
+- 4
+- 5
+- 6
+demand_sinusoidal:
+- node: 4
+  base: 8.0
+  amplitude: 2.8
+  phase: 2.7
+- node: 5
+  base: 7.1
+  amplitude: 2.5
+  phase: 1.83
+- node: 6
+  base: 10.7
+  amplitude: 1.1
+  phase: 0.22
+availability:
+  open_probability: 0.78
+  per_edge:
+  - 0.84
+  - 0.66
+  - 0.88
+  - 0.9
+  - 0.6
+  - 0.75
+  - 0.81
+  - 0.77
+risk:
+  per_edge_range:
+  - - 0.078
+    - 0.156
+  - - 0.021
+    - 0.098
+  - - 0.015
+    - 0.115
+  - - 0.048
+    - 0.097
+  - - 0.026
+    - 0.107
+  - - 0.064
+    - 0.126
+  - - 0.017
+    - 0.085
+  - - 0.015
+    - 0.082
+loss_penalty: 1.2
+edge_capacity:
+- 17.0
+- 11.5
+- 12.4
+- 16.2
+- 11.6
+- 10.9
+- 12.0
+- 14.9
+edge_cost:
+- 1.22
+- 1.2
+- 0.93
+- 1.03
+- 0.95
+- 1.15
+- 1.06
+- 1.24
+initial_inventory:
+- 112.7
+- 4.7
+- 1.4
+- 4.3
+- 0.5
+- 0.8
+- 6.9
+supply_injection:
+  per_period:
+  - node: 0
+    amount: 6.0
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.093
+  risk_weight: 0.146
+cvar:
+  lambda: 0.0
+  tau: 0.2

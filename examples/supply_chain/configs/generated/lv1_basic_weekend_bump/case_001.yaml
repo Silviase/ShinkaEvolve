@@ -1,0 +1,51 @@
+level: 1
+horizon: 3
+num_nodes: 4
+edges:
+- - 0
+  - 1
+- - 0
+  - 2
+- - 0
+  - 2
+- - 0
+  - 3
+supply_nodes:
+- 0
+demand_nodes:
+- 1
+- 2
+- 3
+demand_uniform:
+- node: 1
+  low: 6.8
+  high: 11.5
+- node: 2
+  low: 5.3
+  high: 8.2
+- node: 3
+  low: 5.7
+  high: 10.5
+initial_inventory:
+  min: 25.0
+  scale: 1.24
+edge_capacity:
+- 3.1
+- 4.0
+- 7.9
+- 3.8
+edge_cost:
+- 0.73
+- 0.92
+- 1.63
+- 0.88
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.0
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.097
+  risk_weight: 0.018
+cvar:
+  lambda: 0.0
+  tau: 0.2

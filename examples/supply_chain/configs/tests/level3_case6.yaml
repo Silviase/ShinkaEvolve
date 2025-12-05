@@ -1,0 +1,36 @@
+# Late-stage spike with noise; rewards buffering at hub 3 before demand peaks.
+description: "Late spike on two demand nodes; requires staging at hub before t>8 under noise."
+level: 3
+horizon: 12
+num_nodes: 6
+edges:
+  - [0, 1]   # depot -> branch A
+  - [0, 2]   # depot -> branch B
+  - [1, 3]   # branch A -> hub
+  - [2, 3]   # branch B -> hub
+  - [1, 4]   # short path to demand 4 (tight capacity)
+  - [2, 5]   # short path to demand 5 (tight capacity)
+  - [3, 4]   # hub -> demand 4
+  - [3, 5]   # hub -> demand 5
+supply_nodes: [0]
+demand_nodes: [4, 5]
+
+demand_waves:
+  - {node: 4, base: 4.8, amplitude: 3.4, freq: 0.45, phase: 1.2, func: sin}
+  - {node: 5, base: 4.6, amplitude: 3.3, freq: 0.4, phase: 1.6, func: cos}
+
+noise_std: 2.0
+
+edge_capacity: [10.0, 10.0, 8.0, 8.0, 5.5, 5.5, 7.5, 7.5]
+edge_cost:     [1.0, 1.0, 1.0, 1.0, 1.05, 1.05, 1.1, 1.1]
+availability_default: true
+risk_default: 0.06
+loss_penalty: 1.0
+
+initial_inventory: [42.0, 8.0, 8.0, 0.0, 0.0, 0.0]
+supply_injection:
+  per_period:
+    - {node: 0, amount: 6.0}
+
+weights: {supply_reward_weight: 1.0, cost_weight: 0.06, risk_weight: 0.0}
+cvar: {lambda: 0.0, tau: 0.2}

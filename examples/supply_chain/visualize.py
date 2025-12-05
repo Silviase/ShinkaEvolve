@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import math
 import sys
 import tempfile
 from pathlib import Path
@@ -44,11 +45,28 @@ def load_policy(policy_path: Path):
     return policy
 
 
-def _build_graph(edges: List[Tuple[int, int]], seed: int) -> Tuple[nx.DiGraph, Dict[int, Tuple[float, float]]]:
-    graph = nx.DiGraph()
+def _layout_positions(graph: nx.DiGraph, seed: int):
+    try:
+        return nx.kamada_kawai_layout(graph, weight=None, scale=1.0, seed=seed)
+    except Exception:
+        pass
+    n = max(1, graph.number_of_nodes())
+    k = 1.5 / math.sqrt(n)
+    return nx.spring_layout(graph, seed=seed, k=k, iterations=200, scale=1.0)
+
+
+def _build_graph(edges: List[Tuple[int, int]], seed: int) -> Tuple[nx.MultiDiGraph, Dict[int, Tuple[float, float]]]:
+    """Build a multi-graph so parallel edges are drawn separately."""
+    graph = nx.MultiDiGraph()
     graph.add_nodes_from(sorted({n for e in edges for n in e}))
-    graph.add_edges_from(edges)
-    pos = nx.spring_layout(graph, seed=seed)
+    for idx, (src, dst) in enumerate(edges):
+        graph.add_edge(src, dst, key=idx, idx=idx)
+
+    # Layout on a simple DiGraph to avoid over-weighting parallel edges.
+    simple = nx.DiGraph()
+    simple.add_nodes_from(graph.nodes())
+    simple.add_edges_from({(src, dst) for src, dst in edges})
+    pos = _layout_positions(simple, seed)
     return graph, pos
 
 
@@ -60,7 +78,7 @@ def _scale(value: float, max_value: float, base: float, span: float) -> float:
 
 def _draw_step(
     ax,
-    graph: nx.DiGraph,
+    graph: nx.MultiDiGraph,
     pos: Dict[int, Tuple[float, float]],
     config,
     step: Dict[str, List[float]],
@@ -97,35 +115,56 @@ def _draw_step(
         font_color="black",
     )
 
-    edge_colors = []
-    widths = []
-    for e_idx, (src, dst) in enumerate(config.edges):
-        ship_amt = shipments[e_idx]
-        is_open = available[e_idx]
-        widths.append(_scale(ship_amt, max_ship, base=1.0, span=4.0 if is_open else 0.0))
-        if not is_open:
-            edge_colors.append("#bdc3c7")  # gray for closed
-        elif ship_amt > 1e-6:
-            edge_colors.append("#f39c12")  # orange when used
-        else:
-            edge_colors.append("#7f8c8d")  # muted gray when idle
-
-    nx.draw_networkx_edges(
-        graph,
-        pos,
-        ax=ax,
-        edge_color=edge_colors,
-        width=widths,
-        arrows=True,
-        arrowsize=12,
-        connectionstyle="arc3,rad=0.07",
-    )
+    # Assign radial offsets for parallel edges to make them visible.
+    pair_to_indices: Dict[Tuple[int, int], List[int]] = {}
+    for idx, (src, dst) in enumerate(config.edges):
+        pair_to_indices.setdefault((src, dst), []).append(idx)
 
     edge_labels = {}
-    for e_idx, (src, dst) in enumerate(config.edges):
-        if shipments[e_idx] > 1e-3:
-            edge_labels[(src, dst)] = f"{shipments[e_idx]:.1f}"
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels, font_size=7, rotate=False, ax=ax)
+    for (src, dst), indices in pair_to_indices.items():
+        count = len(indices)
+        if count == 1:
+            rads = [0.07]
+        else:
+            # Spread arcs symmetrically, keeping magnitude modest.
+            step_rad = 0.12 / max(1, count - 1)
+            start = -step_rad * (count - 1) / 2
+            rads = [start + i * step_rad for i in range(count)]
+
+        for rad, e_idx in zip(rads, indices):
+            ship_amt = shipments[e_idx]
+            is_open = available[e_idx]
+            width = _scale(ship_amt, max_ship, base=1.0, span=4.0 if is_open else 0.0)
+            color = (
+                "#bdc3c7"
+                if not is_open
+                else "#f39c12"
+                if ship_amt > 1e-6
+                else "#7f8c8d"
+            )
+            nx.draw_networkx_edges(
+                graph,
+                pos,
+                ax=ax,
+                edgelist=[(src, dst, e_idx)],
+                edge_color=color,
+                width=width,
+                arrows=True,
+                arrowsize=12,
+                connectionstyle=f"arc3,rad={rad}",
+            )
+            if ship_amt > 1e-3:
+                edge_labels[(src, dst, e_idx)] = f"{ship_amt:.1f}"
+
+    if edge_labels:
+        nx.draw_networkx_edge_labels(
+            graph,
+            pos,
+            edge_labels=edge_labels,
+            font_size=7,
+            rotate=False,
+            ax=ax,
+        )
 
     ax.set_title(f"Level {config.level} | Step {t + 1}/{config.horizon}", fontsize=12)
     if max_demand > 1e-6:

@@ -1,0 +1,167 @@
+level: 5
+horizon: 21
+num_nodes: 12
+edges:
+- - 1
+  - 2
+- - 0
+  - 2
+- - 0
+  - 3
+- - 0
+  - 4
+- - 1
+  - 4
+- - 0
+  - 5
+- - 3
+  - 6
+- - 2
+  - 7
+- - 4
+  - 6
+- - 5
+  - 6
+- - 7
+  - 8
+- - 6
+  - 8
+- &id001
+  - 7
+  - 9
+- - 8
+  - 10
+- - 9
+  - 10
+- - 8
+  - 11
+- - 9
+  - 11
+- - 6
+  - 9
+- *id001
+- - 11
+  - 10
+- - 0
+  - 11
+supply_nodes:
+- 0
+- 1
+demand_nodes:
+- 10
+- 11
+demand_regimes:
+  base_demands:
+    10: 7.1
+    11: 9.0
+  regimes:
+  - until: 7
+    scale: 1.01
+    volatility: 0.99
+    risk_base: 0.053
+  - until: 14
+    scale: 1.45
+    volatility: 1.11
+    risk_base: 0.133
+  - until: null
+    scale: 1.22
+    volatility: 1.36
+    risk_base: 0.108
+  risk_spread: 0.33
+availability:
+  primary: 0.81
+  secondary: 0.7
+  primary_edges: 21
+risk_base_shift_per_edge:
+- 0.057
+- 0.064
+- 0.029
+- 0.043
+- 0.046
+- 0.025
+- 0.019
+- 0.007
+- 0.013
+- 0.041
+- 0.052
+- 0.05
+- 0.042
+- 0.012
+- 0.064
+- 0.059
+- 0.003
+- 0.069
+- 0.052
+- 0.009
+- 0.048
+edge_capacity:
+- 23.6
+- 21.4
+- 23.2
+- 15.0
+- 12.6
+- 21.5
+- 20.8
+- 18.6
+- 12.1
+- 15.4
+- 15.8
+- 20.5
+- 23.6
+- 18.6
+- 12.3
+- 13.8
+- 15.2
+- 14.8
+- 21.3
+- 17.5
+- 21.9
+edge_cost:
+- 1.0
+- 1.21
+- 1.1
+- 1.06
+- 1.18
+- 1.2
+- 0.9
+- 0.87
+- 1.11
+- 0.85
+- 1.05
+- 1.2
+- 0.85
+- 1.0
+- 1.17
+- 0.99
+- 1.08
+- 0.87
+- 1.15
+- 1.04
+- 6.52
+loss_penalty: 1.57
+initial_inventory:
+- 149.5
+- 170.2
+- 37.1
+- 32.0
+- 14.6
+- 13.7
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+supply_injection:
+  per_period:
+  - node: 0
+    amount: 8.97
+  - node: 1
+    amount: 8.54
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.046
+  risk_weight: 0.975
+cvar:
+  lambda: 0.54
+  tau: 0.25

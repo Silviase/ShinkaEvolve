@@ -3,7 +3,7 @@ evaluate_function:
   program_path: examples/supply_chain/initial.py
   results_dir: results/supply_chain
   base_seed: 13
-  config_dir: configs/tests
+  config_dir: configs
 
 distributed_job_config:
   _target_: shinka.launch.SlurmCondaJobConfig
@@ -20,28 +20,29 @@ distributed_job_config:
 
 evo_config:
   task_sys_msg: |
-    You are evolving a Python policy for a multi-stage supply chain on a directed graph with capacities, costs, and risk.
+    You are an expert operations-research / supply-chain LLM evolving a Python policy for a multi-stage supply chain on a directed graph with capacities, costs, and risk.
     Implement `logistics_policy(state: LogisticsState) -> Shipments` inside the EVOLVE-BLOCK.
 
     System constraints (must obey):
-    - Shipments are non-negative and cannot exceed edge_capacity or source inventory; skip closed edges (edge_available=False).
-    - State fields: t, T, edges, inventory, demand, is_supply_node, is_demand_node, edge_capacity, edge_cost, edge_available, edge_risk, cost_weight, risk_weight, supply_reward_weight.
+    - Shipments are non-negative and cannot exceed edge_capacity or source inventory; per-node outflow must respect available inventory. Skip closed edges (edge_available=False).
+    - State fields: t, T, edges, inventory, demand, is_supply_node, is_demand_node, edge_capacity, edge_cost, edge_available, edge_risk, cost_weight, risk_weight, supply_reward_weight. Unknown fields may be ignored safely.
+    - Risky edges: edge_risk is a per-edge failure probability; using such edges can randomly lose shipments and incur loss weighted by risk_weight.
 
-    Principles for a robust policy:
-    1) Horizon-aware: use remaining steps (T - t) to trade off immediate fulfillment vs. building buffers for future demand/stock-outs.
-    2) Risk- and cost-aware routing: prefer cheaper/safer open edges; diversify flow when a single route is risky/fragile (especially level 4/5).
-    3) Demand coverage: prioritize true demand nodes, but allocate modest buffers to downstream/intermediate nodes to prevent future starvation.
-    4) Multi-hop & non-leaf demand: internal nodes may have demand; do not assume a single-echelon tree. Support flows through intermediates.
-    5) Peak/stochastic demand: when inventory and time permit, stage extra supply near volatile or high-risk cuts; avoid over-committing early.
-    6) Graceful degradation: if capacity or availability is low, spread shipments across viable edges rather than zeroing out a node.
-    7) Loss/penalty awareness: when risk_weight > 0, reduce flow on high-risk edges or split volume; when risk is 0, prioritize cost-efficient edges.
-    8) Optimization is allowed: if a small LP / min-cost-flow is easy to set up per step, you may use it when available; otherwise fall back to a simple heuristic. Keep it lightweight and resilient to missing solvers.
+    Scoring reminder:
+    - Maximize episode score = supply_reward_weight * fulfilled - cost_weight * cost - risk_weight * loss.
+    - Advanced cases uses risk-adjusted fill rate (fulfillment_rate - lambda * normalized_z).
 
-    Provided helpers (imported in the template):
-    - generate_episode_config(level, seed) or generate_episode_config_from_file(path, seed)
-    - simulate_episode(config, policy_fn, seed=0)  # for local checks
+    Key hints (be concise and robust):
+    1) Horizon-aware: balance immediate demand vs. staging buffers for later steps.
+    2) Risk/cost aware: prefer safer+cheaper open edges; split flow if a route is risky/fragile.
+    3) Cover demand: serve demand nodes first, but keep small buffers at intermediates to avoid starvation.
+    4) Multi-hop: internal nodes can have demand; support flows through intermediates (not just leaves).
+    5) Peaks/uncertainty: when inventory/time allow, pre-position near volatile or risky cuts; avoid over-committing early.
+    6) Graceful degradation: with tight capacity/availability, spread shipments over viable edges instead of zeroing out.
+    7) Loss penalty: when risk_weight > 0, down-weight risky edges; when risk=0, emphasize cost efficiency.
+    8) Optimization welcome: small LP/min-cost-flow is allowed if lightweight; otherwise fall back to a simple heuristic and be resilient to missing solvers.
 
-    The same signature is used for all curriculum levels and test scenarios (single-step deterministic up to contested, risk-aware cases).
+    Be creative and try to find a new solution.
   language: "python"
   init_program_path: "examples/supply_chain/initial.py"
   job_type: "slurm_conda"

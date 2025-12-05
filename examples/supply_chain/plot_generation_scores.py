@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import re
 from pathlib import Path
@@ -49,19 +48,29 @@ def collect_generation_scores(run_dir: Path, metric_key: str) -> Tuple[List[int]
 
 
 def load_policy_doc(main_py: Path) -> str:
-    spec = importlib.util.spec_from_file_location("policy_module", main_py)
-    if spec is None or spec.loader is None:
-        return "Unable to load module."
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    policy = getattr(module, "logistics_policy", None)
-    if policy is None:
-        return "`logistics_policy` not found."
-    doc = getattr(policy, "__doc__", None)
-    if not doc:
-        return "No docstring."
-    # Collapse whitespace for readability
-    return " ".join(doc.split())
+    """Safely load logistics_policy docstring from a saved main.py."""
+    try:
+        import importlib.util
+        import sys
+        # Add repo root to sys.path for saved policies that import examples.*
+        repo_root = Path(__file__).resolve().parents[2]
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+
+        spec = importlib.util.spec_from_file_location("policy_module", main_py)
+        if spec is None or spec.loader is None:
+            return "Unable to load module."
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        policy = getattr(module, "logistics_policy", None)
+        if policy is None:
+            return "`logistics_policy` not found."
+        doc = getattr(policy, "__doc__", None)
+        if not doc:
+            return "No docstring."
+        return " ".join(doc.split())
+    except Exception as e:
+        return f"Error loading policy doc: {e}"
 
 
 def main(run_dir: Path, metric_key: str, output_path: Path, show_policy_doc: bool) -> None:
@@ -95,22 +104,32 @@ def main(run_dir: Path, metric_key: str, output_path: Path, show_policy_doc: boo
     if show_policy_doc:
         print("\nPolicy docstrings per generation:")
         gen_pattern = re.compile(r"gen_(\d+)$")
-        for child in sorted(run_dir.iterdir()):
+        entries: List[Tuple[int, Path, str]] = []
+        best_entry: Tuple[int, Path, str] | None = None
+        for child in run_dir.iterdir():
             if not child.is_dir():
                 continue
             if child.name == "best":
-                tag = "best"
-            else:
-                m = gen_pattern.match(child.name)
-                if not m:
-                    continue
-                tag = f"gen_{m.group(1)}"
+                best_entry = (10**9, child, "best")
+                continue
+            m = gen_pattern.match(child.name)
+            if not m:
+                continue
+            gen_num = int(m.group(1))
+            entries.append((gen_num, child, f"gen_{gen_num}"))
 
+        for _, child, tag in sorted(entries, key=lambda t: t[0]):
             main_py = child / "main.py"
             if not main_py.exists():
                 continue
             doc = load_policy_doc(main_py)
             print(f"{tag}: {doc}")
+        if best_entry:
+            _, child, tag = best_entry
+            main_py = child / "main.py"
+            if main_py.exists():
+                doc = load_policy_doc(main_py)
+                print(f"{tag}: {doc}")
 
 
 if __name__ == "__main__":

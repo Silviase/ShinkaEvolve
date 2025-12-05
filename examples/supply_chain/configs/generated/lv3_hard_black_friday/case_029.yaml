@@ -1,0 +1,117 @@
+level: 3
+horizon: 13
+num_nodes: 10
+edges:
+- &id001
+  - 0
+  - 1
+- - 0
+  - 2
+- - 0
+  - 3
+- - 2
+  - 4
+- - 3
+  - 5
+- - 3
+  - 6
+- &id002
+  - 1
+  - 6
+- - 6
+  - 7
+- - 5
+  - 8
+- - 6
+  - 9
+- - 4
+  - 9
+- - 6
+  - 9
+- *id001
+- *id002
+- - 9
+  - 7
+supply_nodes:
+- 0
+demand_nodes:
+- 7
+- 8
+- 9
+demand_waves:
+- node: 7
+  base: 8.6
+  amplitude: 0.5
+  freq: 0.55
+  phase: 1.51
+  func: cos
+- node: 8
+  base: 10.0
+  amplitude: 0.88
+  freq: 0.71
+  phase: 2.15
+  func: sin
+- node: 9
+  base: 12.4
+  amplitude: 3.0
+  freq: 0.73
+  phase: 0.32
+  func: sin
+noise_std: 2.15
+edge_capacity:
+- 23.4
+- 14.4
+- 24.0
+- 15.4
+- 25.6
+- 23.1
+- 20.4
+- 15.9
+- 15.5
+- 17.2
+- 16.8
+- 24.4
+- 17.3
+- 16.8
+- 22.2
+edge_cost:
+- 0.98
+- 1.23
+- 1.13
+- 1.2
+- 1.0
+- 0.92
+- 1.21
+- 1.01
+- 1.07
+- 0.97
+- 1.04
+- 0.96
+- 0.94
+- 1.11
+- 0.97
+availability_default: true
+risk_default: 0.0
+loss_penalty: 1.62
+initial_inventory:
+- 103.0
+- 14.2
+- 4.3
+- 4.8
+- 14.1
+- 5.2
+- 12.9
+- 4.1
+- 9.2
+- 8.9
+supply_injection:
+  per_period:
+  - node: 0
+    amount: 5.44
+weights:
+  supply_reward_weight: 1.0
+  cost_weight: 0.099
+  risk_weight: 0.031
+cvar:
+  lambda: 0.0
+  tau: 0.2
